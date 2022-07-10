@@ -67,6 +67,18 @@ impl Storage {
     }
 }
 
+async fn exec_query(schema: &Schema<Query, Mutation, EmptySubscription>, query_str: &str) {
+    let res = schema.execute(query_str).await;
+    let res_json = serde_json::to_string(&res);
+    println!("{}", res_json.unwrap());
+}
+
+fn print_sdl(schema: &Schema<Query, Mutation, EmptySubscription>) {
+    println!("----------");
+    println!("{}", schema.sdl());
+    println!("----------");
+}
+
 #[tokio::main]
 async fn main() {
     let mut _storage = Storage::new();
@@ -77,23 +89,13 @@ async fn main() {
     };
     _storage.books.push(book);
     let storage = Arc::new(Mutex::new(_storage));
+
     let schema = Schema::build(Query, Mutation, EmptySubscription)
         .data(storage)
         .finish();
-    println!("{}", &schema.sdl());
-
-    let query = "query {books { name }}";
-    let res = schema.execute(query).await;
-    let res_json = serde_json::to_string(&res);
-    println!("{}", res_json.unwrap());
-
-    let query = "mutation {addBook(bookName:\"book2\") { id name }}";
-    let res = schema.execute(query).await;
-    let res_json = serde_json::to_string(&res);
-    println!("{}", res_json.unwrap());
-
-    let query = "query {books { id name }}";
-    let res = schema.execute(query).await;
-    let res_json = serde_json::to_string(&res);
-    println!("{}", res_json.unwrap());
+    print_sdl(&schema);
+    exec_query(&schema, "query {books { name }}").await;
+    let query_str = "mutation {addBook(bookName:\"book2\") { id name }}";
+    exec_query(&schema, query_str).await;
+    exec_query(&schema, "query {books { id name }}").await;
 }
