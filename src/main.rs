@@ -1,18 +1,25 @@
-use async_graphql::{EmptyMutation, EmptySubscription, Object, Schema};
+use async_graphql::*;
 
 struct Query;
 
 #[Object]
 impl Query {
-    async fn add(&self, a: i32, b: i32) -> i32 {
-        a + b
+    async fn add(&self, a: i32, b: i32) -> MyObject {
+        MyObject { a, b }
     }
+}
+
+#[derive(SimpleObject)]
+struct MyObject {
+    a: i32,
+    b: i32,
 }
 
 #[tokio::main]
 async fn main() {
     let schema = Schema::new(Query, EmptyMutation, EmptySubscription);
-    let res = schema.execute("{add(a: 10, b:20)}").await;
+    println!("{}", &schema.sdl());
+    let res = schema.execute("{add(a: 10, b:20) {a}}").await;
     let res_json = serde_json::to_string(&res);
     println!("{}", res_json.unwrap());
 }
